@@ -12,7 +12,6 @@ import { Wallet, Eye, EyeOff, TrendingUp, PieChart, BarChart3 } from 'lucide-rea
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import toast from 'react-hot-toast';
-import type { Metadata } from 'next';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,7 +25,7 @@ export default function LoginPage() {
 
   const afterAuth = () => {
     document.cookie = 'spendly-session=1; path=/; max-age=3600; SameSite=Lax';
-    router.replace('/');
+    router.replace('/dashboard');
   };
 
   const handleGoogle = async () => {

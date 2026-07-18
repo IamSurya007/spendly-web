@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Routes that require authentication
-const protectedPaths = ['/', '/expenses', '/budgets', '/loans', '/investments', '/settings'];
+const protectedPaths = ['/dashboard', '/expenses', '/budgets', '/loans', '/investments', '/settings'];
 // Routes only accessible when NOT authenticated
 const authPaths = ['/login'];
 
@@ -24,7 +24,7 @@ export function proxy(request: NextRequest) {
   }
 
   if (isAuthRoute && sessionCookie) {
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return NextResponse.next();

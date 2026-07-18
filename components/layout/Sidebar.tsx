@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/expenses', label: 'Expenses', icon: Receipt },
   { href: '/budgets', label: 'Budgets', icon: PiggyBank },
   { href: '/loans', label: 'Loans', icon: Landmark },
@@ -32,17 +32,20 @@ export default function Sidebar({ onNavClick }: SidebarProps) {
   return (
     <aside className="flex flex-col h-full bg-[#0D1B3E] w-60">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
+      <Link
+        href="/"
+        className="flex items-center gap-3 px-5 py-5 border-b border-white/10 hover:opacity-90 transition-opacity"
+      >
         <div className="w-8 h-8 bg-[#3D7FE8] rounded-xl flex items-center justify-center shadow-lg">
           <Wallet size={16} className="text-white" />
         </div>
         <span className="text-white font-bold text-lg tracking-tight">Spendly</span>
-      </div>
+      </Link>
 
       {/* Nav Items */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href);
+          const isActive = href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(href);
           return (
             <Link
               key={href}
