@@ -11,6 +11,7 @@ import {
   TrendingUp,
   Settings,
   Wallet,
+  Radio,
 } from 'lucide-react';
 
 const navItems = [
@@ -19,6 +20,7 @@ const navItems = [
   { href: '/budgets', label: 'Budgets', icon: PiggyBank },
   { href: '/loans', label: 'Loans', icon: Landmark },
   { href: '/investments', label: 'Investments', icon: TrendingUp },
+  { href: '/orbit-demo', label: 'Orbit Companion', icon: Radio },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
