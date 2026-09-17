@@ -11,11 +11,13 @@ import {
   TrendingUp,
   Settings,
   Wallet,
+  CreditCard,
   Radio,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/accounts', label: 'Accounts', icon: CreditCard },
   { href: '/expenses', label: 'Expenses', icon: Receipt },
   { href: '/budgets', label: 'Budgets', icon: PiggyBank },
   { href: '/loans', label: 'Loans', icon: Landmark },

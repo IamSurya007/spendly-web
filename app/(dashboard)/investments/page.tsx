@@ -7,27 +7,16 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { formatINR, formatDate, daysRemaining } from '@/lib/formatters';
-import { Plus, TrendingUp, PiggyBank, Target, AlertCircle, Clock } from 'lucide-react';
+import { Plus, TrendingUp, PiggyBank, Target, AlertCircle, Clock, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import type { Metadata } from 'next';
-
-interface Investment {
-  id: string;
-  type: string;
-  monthlyAmount?: number;
-  principal?: number;
-  durationMonths?: number;
-  interestRate?: number;
-  startDate?: string;
-  maturityDate?: string;
-  maturityAmount?: number;
-  institution?: string;
-}
+import type { Investment } from '@/types';
 
 export default function InvestmentsPage() {
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [summary, setSummary] = useState({ totalPrincipal: 0, totalMaturityValue: 0 });
 
   const fetchInvestments = async () => {
@@ -47,6 +36,30 @@ export default function InvestmentsPage() {
   };
 
   useEffect(() => { fetchInvestments(); }, []);
+
+  const handleEdit = (inv: Investment) => {
+    setEditingInvestment(inv);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this investment?')) return;
+    setDeletingId(id);
+    try {
+      await api.delete(`/investments/${id}`);
+      toast.success('Investment deleted');
+      fetchInvestments();
+    } catch {
+      toast.error('Failed to delete investment');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingInvestment(null);
+  };
 
   // Maturing in next 30 days
   const maturingSoon = investments.filter((inv) => {
@@ -68,7 +81,14 @@ export default function InvestmentsPage() {
           <h1 className="text-2xl font-bold text-[#0D1B3E]">Investments</h1>
           <p className="text-sm text-[#7B8399] mt-1">Monitor your investment portfolio</p>
         </div>
-        <Button onClick={() => setShowModal(true)} size="sm" id="add-investment-btn">
+        <Button
+          onClick={() => {
+            setEditingInvestment(null);
+            setShowModal(true);
+          }}
+          size="sm"
+          id="add-investment-btn"
+        >
           <Plus size={15} />
           Add Investment
         </Button>
@@ -118,7 +138,7 @@ export default function InvestmentsPage() {
           ) : (
             <div className="space-y-3" id="investments-list">
               {investments.map((inv) => (
-                <div key={inv.id} className="p-3 rounded-xl bg-[#F0F2F6] hover:bg-[#EEF1F8] transition-colors">
+                <div key={inv.id} className="p-3 rounded-xl bg-[#F0F2F6] hover:bg-[#EEF1F8] transition-colors group">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div
@@ -138,13 +158,34 @@ export default function InvestmentsPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-[#0D1B3E]">
-                        {formatINR(inv.maturityAmount || inv.principal || 0)}
-                      </p>
-                      <p className="text-xs text-[#7B8399]">
-                        Principal: {formatINR(inv.principal || inv.monthlyAmount || 0)}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-[#0D1B3E]">
+                          {formatINR(inv.maturityAmount || inv.principal || 0)}
+                        </p>
+                        <p className="text-xs text-[#7B8399]">
+                          Principal: {formatINR(inv.principal || inv.monthlyAmount || 0)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleEdit(inv)}
+                          className="p-1.5 rounded-lg hover:bg-[#EEF1F8] text-[#7B8399] hover:text-[#3D7FE8] transition-colors"
+                          title="Edit investment"
+                          aria-label="Edit investment"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(inv.id)}
+                          disabled={deletingId === inv.id}
+                          className="p-1.5 rounded-lg hover:bg-[#C0293E]/10 text-[#7B8399] hover:text-[#C0293E] transition-colors disabled:opacity-50"
+                          title="Delete investment"
+                          aria-label="Delete investment"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                   {inv.maturityDate && (
@@ -199,8 +240,9 @@ export default function InvestmentsPage() {
 
       <InvestmentModal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={handleCloseModal}
         onSuccess={fetchInvestments}
+        investment={editingInvestment}
       />
     </div>
   );

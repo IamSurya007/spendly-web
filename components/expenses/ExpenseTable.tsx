@@ -6,19 +6,9 @@ import { formatINR, formatDate } from '@/lib/formatters';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import { Pencil, Trash2, AlertCircle } from 'lucide-react';
+import { Pencil, Trash2, AlertCircle, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-interface Expense {
-  id: string;
-  amount: number;
-  category: string;
-  note?: string;
-  date: string;
-  method: string;
-  source: string;
-  merchant?: string;
-}
+import type { Expense } from '@/types';
 
 interface ExpenseTableProps {
   filters: { category?: string; source?: string; month?: string };
@@ -103,7 +93,7 @@ export default function ExpenseTable({ filters, onEdit, refreshKey }: ExpenseTab
         <table className="w-full text-sm" id="expenses-table">
           <thead>
             <tr className="border-b border-[#E4E7EF]">
-              {['Date', 'Merchant / Note', 'Category', 'Method', 'Amount', ''].map((h) => (
+              {['Date', 'Merchant / Note', 'Category', 'Method / Status', 'Amount', ''].map((h) => (
                 <th
                   key={h}
                   className="text-left text-xs font-medium text-[#7B8399] py-3 px-2 first:pl-0 last:pr-0"
@@ -114,53 +104,65 @@ export default function ExpenseTable({ filters, onEdit, refreshKey }: ExpenseTab
             </tr>
           </thead>
           <tbody className="divide-y divide-[#E4E7EF]">
-            {expenses.map((expense) => (
-              <tr key={expense.id} className="group hover:bg-[#ECEEF4]/50 transition-colors">
-                <td className="py-3 px-2 pl-0 text-xs text-[#7B8399] whitespace-nowrap">
-                  {formatDate(expense.date)}
-                </td>
-                <td className="py-3 px-2">
-                  <p className="font-medium text-[#0D1B3E]">
-                    {expense.merchant || expense.category}
-                  </p>
-                  {expense.note && (
-                    <p className="text-xs text-[#7B8399] truncate max-w-[200px]">{expense.note}</p>
-                  )}
-                </td>
-                <td className="py-3 px-2">
-                  <span className="text-xs bg-[#EEF1F8] text-[#0D1B3E] px-2 py-1 rounded-md">
-                    {expense.category}
-                  </span>
-                </td>
-                <td className="py-3 px-2">
-                  <Badge variant={methodColors[expense.method] || 'default'}>
-                    {expense.method}
-                  </Badge>
-                </td>
-                <td className="py-3 px-2 font-semibold text-[#C0293E] whitespace-nowrap">
-                  -{formatINR(expense.amount)}
-                </td>
-                <td className="py-3 px-2 pr-0">
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => onEdit(expense)}
-                      className="p-1.5 rounded-lg hover:bg-[#EEF1F8] text-[#7B8399] hover:text-[#3D7FE8] transition-colors"
-                      aria-label="Edit expense"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(expense.id)}
-                      disabled={deletingId === expense.id}
-                      className="p-1.5 rounded-lg hover:bg-[#C0293E]/10 text-[#7B8399] hover:text-[#C0293E] transition-colors disabled:opacity-50"
-                      aria-label="Delete expense"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {expenses.map((expense) => {
+              const isExcluded =
+                expense.isCountedAsSpend === false || expense.is_counted_as_spend === false;
+              return (
+                <tr key={expense.id} className="group hover:bg-[#ECEEF4]/50 transition-colors">
+                  <td className="py-3 px-2 pl-0 text-xs text-[#7B8399] whitespace-nowrap">
+                    {formatDate(expense.date)}
+                  </td>
+                  <td className="py-3 px-2">
+                    <p className="font-medium text-[#0D1B3E]">
+                      {expense.merchant || expense.category}
+                    </p>
+                    {expense.note && (
+                      <p className="text-xs text-[#7B8399] truncate max-w-[200px]">{expense.note}</p>
+                    )}
+                  </td>
+                  <td className="py-3 px-2">
+                    <span className="text-xs bg-[#EEF1F8] text-[#0D1B3E] px-2 py-1 rounded-md">
+                      {expense.category}
+                    </span>
+                  </td>
+                  <td className="py-3 px-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Badge variant={methodColors[expense.method] || 'default'}>
+                        {expense.method}
+                      </Badge>
+                      {isExcluded && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded border border-gray-200" title="Excluded from monthly spend summary and budget limits">
+                          <EyeOff size={10} />
+                          Not Spend
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className={`py-3 px-2 font-semibold whitespace-nowrap ${isExcluded ? 'text-gray-400 line-through' : 'text-[#C0293E]'}`}>
+                    -{formatINR(expense.amount)}
+                  </td>
+                  <td className="py-3 px-2 pr-0">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => onEdit(expense)}
+                        className="p-1.5 rounded-lg hover:bg-[#EEF1F8] text-[#7B8399] hover:text-[#3D7FE8] transition-colors"
+                        aria-label="Edit expense"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(expense.id)}
+                        disabled={deletingId === expense.id}
+                        className="p-1.5 rounded-lg hover:bg-[#C0293E]/10 text-[#7B8399] hover:text-[#C0293E] transition-colors disabled:opacity-50"
+                        aria-label="Delete expense"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

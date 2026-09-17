@@ -7,6 +7,7 @@ import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import type { Investment } from '@/types';
 
 const typeOptions = [
   { value: 'RD', label: 'Recurring Deposit (RD)' },
@@ -21,18 +22,28 @@ interface InvestmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  investment?: Investment | null;
 }
 
 function calcRDMaturity(monthly: number, months: number, rate: number): number {
-  // Standard RD maturity formula: M * [(1+r/4)^(4n) - 1] / (1-(1+r/4)^(-1/3))
-  // Simplified: approximate
   if (!monthly || !months || !rate) return 0;
   const r = rate / 100 / 4;
   const n = months / 3;
-  return Math.round(monthly * (Math.pow(1 + r, n) - 1) / (1 - Math.pow(1 + r, -1 / 3)));
+  return Math.round((monthly * (Math.pow(1 + r, n) - 1)) / (1 - Math.pow(1 + r, -1 / 3)));
 }
 
-export default function InvestmentModal({ isOpen, onClose, onSuccess }: InvestmentModalProps) {
+function formatDateForInput(dateStr?: string) {
+  if (!dateStr) return '';
+  return dateStr.slice(0, 10);
+}
+
+export default function InvestmentModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  investment,
+}: InvestmentModalProps) {
+  const isEdit = !!investment?.id;
   const [form, setForm] = useState({
     type: 'RD',
     monthlyAmount: '',
@@ -47,17 +58,43 @@ export default function InvestmentModal({ isOpen, onClose, onSuccess }: Investme
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
+    if (investment) {
       setForm({
-        type: 'RD', monthlyAmount: '', principal: '', durationMonths: '',
-        interestRate: '', startDate: '', maturityDate: '', maturityAmount: '', institution: '',
+        type: investment.type || 'RD',
+        monthlyAmount: investment.monthlyAmount !== undefined ? investment.monthlyAmount.toString() : '',
+        principal: investment.principal !== undefined ? investment.principal.toString() : '',
+        durationMonths: investment.durationMonths !== undefined ? investment.durationMonths.toString() : '',
+        interestRate: investment.interestRate !== undefined ? investment.interestRate.toString() : '',
+        startDate: formatDateForInput(investment.startDate),
+        maturityDate: formatDateForInput(investment.maturityDate),
+        maturityAmount: investment.maturityAmount !== undefined ? investment.maturityAmount.toString() : '',
+        institution: investment.institution || '',
+      });
+    } else {
+      setForm({
+        type: 'RD',
+        monthlyAmount: '',
+        principal: '',
+        durationMonths: '',
+        interestRate: '',
+        startDate: '',
+        maturityDate: '',
+        maturityAmount: '',
+        institution: '',
       });
     }
-  }, [isOpen]);
+  }, [investment, isOpen]);
 
-  // Auto-calculate maturity for RD
+  // Auto-calculate maturity for RD if user hasn't overridden
   useEffect(() => {
-    if (form.type === 'RD' && form.monthlyAmount && form.durationMonths && form.interestRate && !form.maturityAmount) {
+    if (
+      form.type === 'RD' &&
+      form.monthlyAmount &&
+      form.durationMonths &&
+      form.interestRate &&
+      !isEdit &&
+      !form.maturityAmount
+    ) {
       const calc = calcRDMaturity(
         Number(form.monthlyAmount),
         Number(form.durationMonths),
@@ -65,14 +102,14 @@ export default function InvestmentModal({ isOpen, onClose, onSuccess }: Investme
       );
       if (calc > 0) setForm((f) => ({ ...f, maturityAmount: calc.toString() }));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.monthlyAmount, form.durationMonths, form.interestRate, form.type]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post('/investments', {
+      const payload = {
         type: form.type,
         monthlyAmount: form.monthlyAmount ? Number(form.monthlyAmount) : undefined,
         principal: form.principal ? Number(form.principal) : undefined,
@@ -81,20 +118,32 @@ export default function InvestmentModal({ isOpen, onClose, onSuccess }: Investme
         startDate: form.startDate ? new Date(form.startDate).toISOString() : undefined,
         maturityDate: form.maturityDate ? new Date(form.maturityDate).toISOString() : undefined,
         maturityAmount: form.maturityAmount ? Number(form.maturityAmount) : undefined,
-        institution: form.institution || undefined,
-      });
-      toast.success('Investment added!');
+        institution: form.institution ? form.institution.trim() : undefined,
+      };
+
+      if (isEdit) {
+        await api.patch(`/investments/${investment!.id}`, payload);
+        toast.success('Investment updated!');
+      } else {
+        await api.post('/investments', payload);
+        toast.success('Investment added!');
+      }
       onSuccess();
       onClose();
     } catch {
-      toast.error('Failed to add investment');
+      toast.error(isEdit ? 'Failed to update investment' : 'Failed to add investment');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add Investment" size="lg">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEdit ? 'Edit Investment' : 'Add Investment'}
+      size="lg"
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <Select
@@ -177,18 +226,30 @@ export default function InvestmentModal({ isOpen, onClose, onSuccess }: Investme
 
         <Input
           id="inv-maturity-amount"
-          label={form.type === 'RD' ? 'Maturity Amount (₹) — auto-calculated for RD' : 'Maturity Amount (₹)'}
+          label={
+            form.type === 'RD'
+              ? 'Maturity Amount (₹) — auto-calculated for RD'
+              : 'Maturity Amount (₹)'
+          }
           type="number"
           min="0"
           placeholder="0"
           value={form.maturityAmount}
           onChange={(e) => setForm({ ...form, maturityAmount: e.target.value })}
-          hint={form.type === 'RD' ? 'Automatically calculated using RD formula. You can override.' : undefined}
+          hint={
+            form.type === 'RD'
+              ? 'Automatically calculated using RD formula. You can override.'
+              : undefined
+          }
         />
 
         <div className="flex gap-3 pt-2">
-          <Button variant="ghost" fullWidth onClick={onClose} disabled={loading} type="button">Cancel</Button>
-          <Button type="submit" fullWidth loading={loading} id="inv-submit-btn">Add Investment</Button>
+          <Button variant="ghost" fullWidth onClick={onClose} disabled={loading} type="button">
+            Cancel
+          </Button>
+          <Button type="submit" fullWidth loading={loading} id="inv-submit-btn">
+            {isEdit ? 'Update Investment' : 'Add Investment'}
+          </Button>
         </div>
       </form>
     </Modal>

@@ -7,17 +7,7 @@ import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
-
-interface Expense {
-  id?: string;
-  amount?: number;
-  category?: string;
-  note?: string;
-  date?: string;
-  method?: string;
-  source?: string;
-  merchant?: string;
-}
+import type { Account, Expense } from '@/types';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -53,6 +43,7 @@ export default function ExpenseModal({
   expense,
 }: ExpenseModalProps) {
   const isEdit = !!expense?.id;
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [form, setForm] = useState({
     amount: '',
     category: '',
@@ -61,12 +52,36 @@ export default function ExpenseModal({
     method: 'UPI',
     merchant: '',
     source: 'MANUAL',
+    accountId: 'default_bank',
+    isCountedAsSpend: true,
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    if (isOpen) {
+      // Fetch accounts for selector
+      api
+        .get('/accounts')
+        .then((res) => {
+          const accs = Array.isArray(res.data) ? res.data : res.data?.data || [];
+          setAccounts(accs);
+        })
+        .catch(() => {
+          setAccounts([]);
+        });
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     if (expense) {
+      const spendFlag =
+        expense.isCountedAsSpend !== undefined
+          ? expense.isCountedAsSpend
+          : expense.is_counted_as_spend !== undefined
+          ? expense.is_counted_as_spend
+          : true;
+
       setForm({
         amount: expense.amount?.toString() || '',
         category: expense.category || '',
@@ -75,6 +90,8 @@ export default function ExpenseModal({
         method: expense.method || 'UPI',
         merchant: expense.merchant || '',
         source: expense.source || 'MANUAL',
+        accountId: expense.accountId || 'default_bank',
+        isCountedAsSpend: spendFlag,
       });
     } else {
       setForm({
@@ -85,6 +102,8 @@ export default function ExpenseModal({
         method: 'UPI',
         merchant: '',
         source: 'MANUAL',
+        accountId: 'default_bank',
+        isCountedAsSpend: true,
       });
     }
     setErrors({});
@@ -114,6 +133,9 @@ export default function ExpenseModal({
         method: form.method,
         merchant: form.merchant || undefined,
         source: form.source,
+        accountId: form.accountId || 'default_bank',
+        isCountedAsSpend: form.isCountedAsSpend,
+        is_counted_as_spend: form.isCountedAsSpend,
       };
 
       if (isEdit) {
@@ -134,6 +156,14 @@ export default function ExpenseModal({
       setLoading(false);
     }
   };
+
+  const accountOptions = [
+    { value: 'default_bank', label: 'Default Bank Account' },
+    ...accounts.map((a) => ({
+      value: a.id,
+      label: `${a.name}${a.accountNumberLast4 ? ` (•••• ${a.accountNumberLast4})` : ''}`,
+    })),
+  ];
 
   return (
     <Modal
@@ -166,16 +196,25 @@ export default function ExpenseModal({
           />
         </div>
 
-        <Select
-          id="expense-category"
-          label="Category"
-          options={categoryOptions}
-          value={form.category}
-          onChange={(e) => setForm({ ...form, category: e.target.value })}
-          placeholder="Select category"
-          error={errors.category}
-          required
-        />
+        <div className="grid grid-cols-2 gap-3">
+          <Select
+            id="expense-category"
+            label="Category"
+            options={categoryOptions}
+            value={form.category}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
+            placeholder="Select category"
+            error={errors.category}
+            required
+          />
+          <Select
+            id="expense-account"
+            label="Account / Payment Source"
+            options={accountOptions}
+            value={form.accountId}
+            onChange={(e) => setForm({ ...form, accountId: e.target.value })}
+          />
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <Select
@@ -204,6 +243,20 @@ export default function ExpenseModal({
           value={form.note}
           onChange={(e) => setForm({ ...form, note: e.target.value })}
         />
+
+        {/* Count as Spend Toggle */}
+        <div className="flex items-center gap-2 pt-1 pb-1">
+          <input
+            id="expense-count-as-spend"
+            type="checkbox"
+            checked={form.isCountedAsSpend}
+            onChange={(e) => setForm({ ...form, isCountedAsSpend: e.target.checked })}
+            className="w-4 h-4 rounded border-[#E4E7EF] text-[#3D7FE8] focus:ring-[#3D7FE8]"
+          />
+          <label htmlFor="expense-count-as-spend" className="text-xs font-medium text-[#0D1B3E] cursor-pointer">
+            Count as spend (include in monthly totals & budget alert calculations)
+          </label>
+        </div>
 
         <div className="flex gap-3 pt-2">
           <Button

@@ -8,20 +8,9 @@ import Badge from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
 import Select from '@/components/ui/Select';
 import { formatINR, formatDate, daysRemaining } from '@/lib/formatters';
-import { Plus, Landmark, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
+import { Plus, Landmark, TrendingUp, TrendingDown, AlertCircle, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import type { Metadata } from 'next';
-
-interface Loan {
-  id: string;
-  type: 'TAKEN' | 'GIVEN';
-  name: string;
-  principal: number;
-  total: number;
-  repaymentDate?: string;
-  notes?: string;
-  status: 'ACTIVE' | 'PAID' | 'OVERDUE' | 'PARTIAL';
-}
+import type { Loan } from '@/types';
 
 const statusOptions = [
   { value: 'ACTIVE', label: 'Active' },
@@ -30,14 +19,12 @@ const statusOptions = [
   { value: 'PARTIAL', label: 'Partial' },
 ];
 
-const statusVariantMap: Record<string, 'active' | 'paid' | 'overdue' | 'partial'> = {
-  ACTIVE: 'active', PAID: 'paid', OVERDUE: 'overdue', PARTIAL: 'partial',
-};
-
 export default function LoansPage() {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingLoan, setEditingLoan] = useState<Loan | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [summary, setSummary] = useState({ totalOwed: 0, totalReceivable: 0 });
 
   const fetchLoans = async () => {
@@ -68,6 +55,30 @@ export default function LoansPage() {
     }
   };
 
+  const handleEdit = (loan: Loan) => {
+    setEditingLoan(loan);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this loan?')) return;
+    setDeletingId(id);
+    try {
+      await api.delete(`/loans/${id}`);
+      toast.success('Loan deleted');
+      fetchLoans();
+    } catch {
+      toast.error('Failed to delete loan');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingLoan(null);
+  };
+
   const netPosition = summary.totalReceivable - summary.totalOwed;
   const upcomingLoans = loans
     .filter((l) => l.status === 'ACTIVE' && l.repaymentDate)
@@ -82,7 +93,14 @@ export default function LoansPage() {
           <h1 className="text-2xl font-bold text-[#0D1B3E]">Loans</h1>
           <p className="text-sm text-[#7B8399] mt-1">Track borrowed and lent money</p>
         </div>
-        <Button onClick={() => setShowModal(true)} size="sm" id="add-loan-btn">
+        <Button
+          onClick={() => {
+            setEditingLoan(null);
+            setShowModal(true);
+          }}
+          size="sm"
+          id="add-loan-btn"
+        >
           <Plus size={15} />
           Add Loan
         </Button>
@@ -129,7 +147,7 @@ export default function LoansPage() {
               {loans.map((loan) => {
                 const days = loan.repaymentDate ? daysRemaining(loan.repaymentDate) : null;
                 return (
-                  <div key={loan.id} className="flex items-center gap-3 p-3 rounded-xl bg-[#F0F2F6] hover:bg-[#EEF1F8] transition-colors">
+                  <div key={loan.id} className="flex items-center gap-3 p-3 rounded-xl bg-[#F0F2F6] hover:bg-[#EEF1F8] transition-colors group">
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${loan.type === 'TAKEN' ? 'bg-[#C0293E]/10' : 'bg-[#1A7A4A]/10'}`}>
                       {loan.type === 'TAKEN'
                         ? <TrendingDown size={14} className="text-[#C0293E]" />
@@ -142,7 +160,7 @@ export default function LoansPage() {
                         {loan.repaymentDate && `Due ${formatDate(loan.repaymentDate)}`}
                       </p>
                     </div>
-                    <div className="text-right mr-2">
+                    <div className="text-right mr-1">
                       <p className={`text-sm font-bold ${loan.type === 'TAKEN' ? 'text-[#C0293E]' : 'text-[#1A7A4A]'}`}>
                         {formatINR(loan.total)}
                       </p>
@@ -159,6 +177,25 @@ export default function LoansPage() {
                         value={loan.status}
                         onChange={(e) => handleStatusChange(loan.id, e.target.value)}
                       />
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleEdit(loan)}
+                        className="p-1.5 rounded-lg hover:bg-[#EEF1F8] text-[#7B8399] hover:text-[#3D7FE8] transition-colors"
+                        title="Edit loan"
+                        aria-label="Edit loan"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(loan.id)}
+                        disabled={deletingId === loan.id}
+                        className="p-1.5 rounded-lg hover:bg-[#C0293E]/10 text-[#7B8399] hover:text-[#C0293E] transition-colors disabled:opacity-50"
+                        title="Delete loan"
+                        aria-label="Delete loan"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
                 );
@@ -197,7 +234,12 @@ export default function LoansPage() {
         </div>
       </div>
 
-      <LoanModal isOpen={showModal} onClose={() => setShowModal(false)} onSuccess={fetchLoans} />
+      <LoanModal
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        onSuccess={fetchLoans}
+        loan={editingLoan}
+      />
     </div>
   );
 }

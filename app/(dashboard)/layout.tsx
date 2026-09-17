@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Sidebar from '@/components/layout/Sidebar';
 import Navbar from '@/components/layout/Navbar';
+import RagChatWidget from '@/components/ai/RagChatWidget';
 import { X } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -42,7 +43,7 @@ export default function DashboardLayout({
   if (!user) return null;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#ECEEF4]">
+    <div className="flex h-screen overflow-hidden bg-[#ECEEF4] relative">
       {/* Desktop Sidebar */}
       <div className="hidden md:flex flex-shrink-0">
         <Sidebar />
@@ -77,6 +78,9 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+
+      {/* Floating Spendly AI RAG Advisor */}
+      <RagChatWidget />
     </div>
   );
 }

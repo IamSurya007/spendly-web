@@ -7,6 +7,7 @@ import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import type { Loan } from '@/types';
 
 interface LoanFormData {
   type: 'TAKEN' | 'GIVEN';
@@ -21,9 +22,16 @@ interface LoanModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  loan?: Loan | null;
 }
 
-export default function LoanModal({ isOpen, onClose, onSuccess }: LoanModalProps) {
+function formatDateForInput(dateStr?: string) {
+  if (!dateStr) return '';
+  return dateStr.slice(0, 10);
+}
+
+export default function LoanModal({ isOpen, onClose, onSuccess, loan }: LoanModalProps) {
+  const isEdit = !!loan?.id;
   const [form, setForm] = useState<LoanFormData>({
     type: 'TAKEN',
     name: '',
@@ -35,35 +43,51 @@ export default function LoanModal({ isOpen, onClose, onSuccess }: LoanModalProps
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
+    if (loan) {
+      setForm({
+        type: loan.type || 'TAKEN',
+        name: loan.name || '',
+        principal: loan.principal !== undefined ? loan.principal.toString() : '',
+        total: loan.total !== undefined ? loan.total.toString() : '',
+        repaymentDate: formatDateForInput(loan.repaymentDate),
+        notes: loan.notes || '',
+      });
+    } else {
       setForm({ type: 'TAKEN', name: '', principal: '', total: '', repaymentDate: '', notes: '' });
     }
-  }, [isOpen]);
+  }, [loan, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post('/loans', {
+      const payload = {
         type: form.type,
-        name: form.name,
+        name: form.name.trim(),
         principal: Number(form.principal),
         total: Number(form.total) || Number(form.principal),
         repaymentDate: form.repaymentDate ? new Date(form.repaymentDate).toISOString() : undefined,
-        notes: form.notes || undefined,
-      });
-      toast.success('Loan added!');
+        notes: form.notes.trim() || undefined,
+      };
+
+      if (isEdit) {
+        await api.patch(`/loans/${loan!.id}`, payload);
+        toast.success('Loan updated!');
+      } else {
+        await api.post('/loans', payload);
+        toast.success('Loan added!');
+      }
       onSuccess();
       onClose();
     } catch {
-      toast.error('Failed to add loan');
+      toast.error(isEdit ? 'Failed to update loan' : 'Failed to add loan');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add Loan" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? 'Edit Loan' : 'Add Loan'} size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
         <Select
           id="loan-type"
@@ -126,7 +150,7 @@ export default function LoanModal({ isOpen, onClose, onSuccess }: LoanModalProps
             Cancel
           </Button>
           <Button type="submit" fullWidth loading={loading} id="loan-submit-btn">
-            Add Loan
+            {isEdit ? 'Update Loan' : 'Add Loan'}
           </Button>
         </div>
       </form>
