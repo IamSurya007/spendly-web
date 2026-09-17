@@ -24,7 +24,10 @@ export interface RagChatMessage {
 }
 
 export async function askRagQuestion(question: string): Promise<RagAskResponse> {
-  const ragBaseUrl = process.env.NEXT_PUBLIC_RAG_API_URL || 'http://localhost:3001';
+  const ragBaseUrl =
+    process.env.NEXT_PUBLIC_RAG_API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    'https://fiscora-api.duckdns.org';
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
