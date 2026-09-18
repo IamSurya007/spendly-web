@@ -13,9 +13,12 @@ import {
   RefreshCw,
   ChevronDown,
   Info,
-  ShieldCheck
+  ShieldCheck,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { askRagQuestion, RagChatMessage, RagSource } from '@/lib/rag';
+import FormattedMarkdown from './FormattedMarkdown';
 
 const QUICK_PROMPTS = [
   'What is the 50/30/20 budgeting rule?',
@@ -26,6 +29,7 @@ const QUICK_PROMPTS = [
 
 export default function RagChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<RagChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -115,7 +119,7 @@ export default function RagChatWidget() {
 
       {/* Chat Window Container */}
       {isOpen && (
-        <div className="w-[90vw] sm:w-[420px] h-[600px] max-h-[82vh] bg-white rounded-2xl shadow-2xl border border-[#E4E7EF] flex flex-col overflow-hidden animate-slide-up transition-all">
+        <div className={`${isExpanded ? 'w-[95vw] sm:w-[720px] md:w-[840px] h-[80vh] sm:h-[750px] max-h-[92vh]' : 'w-[90vw] sm:w-[450px] h-[600px] max-h-[82vh]'} bg-white rounded-2xl shadow-2xl border border-[#E4E7EF] flex flex-col overflow-hidden animate-slide-up transition-all duration-300`}>
           {/* Header */}
           <div className="bg-gradient-to-r from-[#0D1B3E] via-[#162A5E] to-[#3D7FE8] p-4 text-white flex items-center justify-between shadow-md">
             <div className="flex items-center gap-3">
@@ -136,6 +140,14 @@ export default function RagChatWidget() {
             </div>
 
             <div className="flex items-center gap-1">
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="p-1.5 rounded-lg hover:bg-white/15 text-white/80 hover:text-white transition-colors"
+                title={isExpanded ? "Standard view" : "Expand view"}
+              >
+                {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
+
               {messages.length > 0 && (
                 <button
                   onClick={clearChat}
@@ -193,12 +205,12 @@ export default function RagChatWidget() {
                 className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}
               >
                 <div
-                  className={`max-w-[88%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-2xs ${
+                  className={`p-3.5 rounded-2xl text-sm leading-relaxed shadow-2xs ${
                     m.sender === 'user'
-                      ? 'bg-gradient-to-r from-[#0D1B3E] to-[#3D7FE8] text-white rounded-br-none'
+                      ? 'max-w-[88%] bg-gradient-to-r from-[#0D1B3E] to-[#3D7FE8] text-white rounded-br-none'
                       : m.error
-                      ? 'bg-red-50 text-red-800 border border-red-200 rounded-bl-none'
-                      : 'bg-white text-[#0D1B3E] border border-[#E4E7EF] rounded-bl-none'
+                      ? 'max-w-[88%] bg-red-50 text-red-800 border border-red-200 rounded-bl-none'
+                      : 'w-full max-w-[96%] bg-white text-[#0D1B3E] border border-[#E4E7EF] rounded-bl-none'
                   }`}
                 >
                   {m.sender === 'ai' && !m.error && (
@@ -213,7 +225,11 @@ export default function RagChatWidget() {
                     </div>
                   )}
 
-                  <div className="whitespace-pre-wrap">{m.text}</div>
+                  {m.sender === 'user' || m.error ? (
+                    <div className="whitespace-pre-wrap">{m.text}</div>
+                  ) : (
+                    <FormattedMarkdown content={m.text} />
+                  )}
                 </div>
 
                 {/* Sources Badges */}
