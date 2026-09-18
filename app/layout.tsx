@@ -12,8 +12,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | Spendly',
-    default: 'Spendly — Personal Finance OS',
+    template: '%s | Fiscora',
+    default: 'Fiscora — Personal Finance OS',
   },
   description:
     'Manage your expenses, budgets, loans, and investments in one place. Your personal finance operating system.',

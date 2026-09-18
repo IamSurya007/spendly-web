@@ -57,7 +57,7 @@ export default function SheetsWidget() {
     const toastId = toast.loading('Exchanging authorization code...');
 
     try {
-      const savedSheetsId = localStorage.getItem('spendly_sheets_id');
+      const savedSheetsId = localStorage.getItem('fiscora_sheets_id') || localStorage.getItem('spendly_sheets_id');
       if (!savedSheetsId) {
         throw new Error('Spreadsheet ID missing from session. Please try connecting again.');
       }
@@ -99,6 +99,7 @@ export default function SheetsWidget() {
       });
 
       toast.success('Successfully connected Google Sheets!', { id: toastId });
+      localStorage.removeItem('fiscora_sheets_id');
       localStorage.removeItem('spendly_sheets_id');
 
       // Clean query parameters from URL
@@ -127,7 +128,7 @@ export default function SheetsWidget() {
     }
 
     // Save sheetsId locally before redirecting so we can retrieve it upon return
-    localStorage.setItem('spendly_sheets_id', sheetsId);
+    localStorage.setItem('fiscora_sheets_id', sheetsId);
 
     const redirectUri = `${window.location.origin}/settings`;
     const scope = 'https://www.googleapis.com/auth/spreadsheets';

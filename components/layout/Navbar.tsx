@@ -19,6 +19,7 @@ export default function Navbar({ onMenuClick, pageTitle }: NavbarProps) {
   const handleSignOut = async () => {
     setSigningOut(true);
     // Clear session cookie
+    document.cookie = 'fiscora-session=; Max-Age=0; path=/';
     document.cookie = 'spendly-session=; Max-Age=0; path=/';
     await signOut();
     router.push('/login');

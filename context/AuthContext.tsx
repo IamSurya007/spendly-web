@@ -56,11 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (firebaseUser) {
         // Sync session cookie immediately so proxy knows user is authenticated
-        document.cookie = 'spendly-session=1; path=/; max-age=3600; SameSite=Lax';
+        document.cookie = 'fiscora-session=1; path=/; max-age=3600; SameSite=Lax';
         // Sync profile after every fresh sign-in
         await syncUserToBackend(firebaseUser);
       } else {
         // Clear cookie if user logs out or session expires
+        document.cookie = 'fiscora-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
         document.cookie = 'spendly-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
       }
     });

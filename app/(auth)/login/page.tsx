@@ -24,7 +24,7 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
 
   const afterAuth = () => {
-    document.cookie = 'spendly-session=1; path=/; max-age=3600; SameSite=Lax';
+    document.cookie = 'fiscora-session=1; path=/; max-age=3600; SameSite=Lax';
     router.replace('/dashboard');
   };
 
@@ -73,7 +73,7 @@ export default function LoginPage() {
           <div className="w-10 h-10 bg-[#3D7FE8] rounded-2xl flex items-center justify-center shadow-lg">
             <Wallet size={20} className="text-white" />
           </div>
-          <span className="text-2xl font-bold tracking-tight">Spendly</span>
+          <span className="text-2xl font-bold tracking-tight">Fiscora</span>
         </div>
 
         {/* Stats previews */}
@@ -107,7 +107,7 @@ export default function LoginPage() {
           <div className="w-8 h-8 bg-[#3D7FE8] rounded-xl flex items-center justify-center">
             <Wallet size={16} className="text-white" />
           </div>
-          <span className="text-xl font-bold text-[#0D1B3E]">Spendly</span>
+          <span className="text-xl font-bold text-[#0D1B3E]">Fiscora</span>
         </div>
 
         <h2 className="text-2xl font-bold text-[#0D1B3E] mb-1">

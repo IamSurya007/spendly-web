@@ -20,12 +20,13 @@ export default function DashboardLayout({
   useEffect(() => {
     if (!loading && !user) {
       // Clear the session cookie to prevent infinite redirect loops by the proxy
+      document.cookie = 'fiscora-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
       document.cookie = 'spendly-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
       router.replace('/login');
     }
     if (user) {
       // Set session cookie so proxy knows user is authenticated
-      document.cookie = 'spendly-session=1; path=/; max-age=3600; SameSite=Lax';
+      document.cookie = 'fiscora-session=1; path=/; max-age=3600; SameSite=Lax';
     }
   }, [user, loading, router]);
 
@@ -34,7 +35,7 @@ export default function DashboardLayout({
       <div className="flex h-screen items-center justify-center bg-[#ECEEF4]">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 bg-[#3D7FE8] rounded-2xl animate-pulse" />
-          <p className="text-sm text-[#7B8399]">Loading Spendly...</p>
+          <p className="text-sm text-[#7B8399]">Loading Fiscora...</p>
         </div>
       </div>
     );
@@ -79,7 +80,7 @@ export default function DashboardLayout({
         </main>
       </div>
 
-      {/* Floating Spendly AI RAG Advisor */}
+      {/* Floating Fiscora AI RAG Advisor */}
       <RagChatWidget />
     </div>
   );

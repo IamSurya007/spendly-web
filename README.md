@@ -1,6 +1,6 @@
-# Spendly — Personal Finance OS
+# Fiscora — Personal Finance OS
 
-A modern Next.js frontend for the Spendly personal finance platform.
+A modern Next.js frontend for the Fiscora personal finance platform.
 
 ## Tech Stack
 

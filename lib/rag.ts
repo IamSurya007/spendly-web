@@ -45,7 +45,7 @@ export async function askRagQuestion(question: string): Promise<RagAskResponse> 
         headers['Authorization'] = `Bearer ${token}`;
       }
     } catch (e) {
-      console.warn('[Spendly AI] Could not retrieve Firebase ID token:', e);
+      console.warn('[Fiscora AI] Could not retrieve Firebase ID token:', e);
     }
   }
 

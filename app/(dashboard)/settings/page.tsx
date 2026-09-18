@@ -21,7 +21,7 @@ export default function SettingsPage() {
     setCopying(true);
     try {
       const token = await user.getIdToken(true);
-      console.log('--- SPENDLY FIREBASE ID TOKEN ---');
+      console.log('--- FISCORA FIREBASE ID TOKEN ---');
       console.log(token);
       console.log('---------------------------------');
       await navigator.clipboard.writeText(token);

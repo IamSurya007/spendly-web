@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import Button from '@/components/ui/Button';
@@ -30,7 +29,7 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
 
   // Constants
-  const APK_DOWNLOAD_URL = 'https://github.com/IamSurya007/spendly/releases/latest/download/app-release.apk';
+  const APK_DOWNLOAD_URL = 'https://github.com/IamSurya007/fiscora/releases/latest/download/app-release.apk';
 
   // Handle header background on scroll
   useEffect(() => {
@@ -109,7 +108,7 @@ export default function LandingPage() {
                 <Wallet size={18} className="text-white" />
               </div>
               <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-[#0D1B3E] to-blue-900 bg-clip-text text-transparent">
-                Spendly
+                Fiscora
               </span>
             </Link>
 
@@ -240,7 +239,7 @@ export default function LandingPage() {
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
               <a href={APK_DOWNLOAD_URL} className="w-full sm:w-auto">
                 <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-lg shadow-blue-500/25 gap-2 font-semibold">
                   <Download size={18} />
@@ -265,24 +264,6 @@ export default function LandingPage() {
                 </Link>
               )}
             </div>
-          </div>
-
-          {/* Web App Preview Image */}
-          <div className="relative max-w-5xl mx-auto mt-4 px-4">
-            <div className="relative bg-slate-900/5 p-2 rounded-2xl md:rounded-3xl border border-slate-200/50 shadow-2xl backdrop-blur overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-tr from-[#3D7FE8]/10 via-transparent to-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-              <Image
-                src="/dashboard-mockup.png"
-                alt="Spendly Web App Dashboard Preview"
-                width={1200}
-                height={750}
-                className="rounded-xl md:rounded-2xl w-full border border-slate-200 object-cover"
-                priority
-              />
-            </div>
-            
-            {/* Soft decorative elements under image */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4/5 h-2/3 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
           </div>
         </div>
       </section>
@@ -324,13 +305,13 @@ export default function LandingPage() {
               </ul>
             </div>
 
-            {/* The Spendly Way */}
+            {/* The Fiscora Way */}
             <div className="p-8 rounded-2xl bg-[#0D1B3E] text-white border border-[#0D1B3E] shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#3D7FE8]/10 rounded-full translate-y-[-20%] translate-x-[20%] pointer-events-none" />
               <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-6">
                 <CheckCircle2 size={24} className="stroke-[3px]" />
               </div>
-              <h3 className="text-lg font-bold mb-4 text-white">The Spendly Way</h3>
+              <h3 className="text-lg font-bold mb-4 text-white">The Fiscora Way</h3>
               <ul className="space-y-3.5 text-sm text-slate-300">
                 <li className="flex items-start gap-2.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 flex-shrink-0" />
@@ -363,7 +344,7 @@ export default function LandingPage() {
               Equipped with everything you need
             </p>
             <p className="text-base text-slate-500 font-medium mt-4 max-w-xl mx-auto">
-              Every tool and widget in Spendly is tailored for ease-of-use and high efficiency.
+              Every tool and widget in Fiscora is tailored for ease-of-use and high efficiency.
             </p>
           </div>
 
@@ -502,7 +483,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-lg font-bold text-slate-900 mb-2">Log Transactions</h3>
               <p className="text-sm text-slate-500">
-                Spendly auto-parses banking SMS warnings instantly. You can also log manually or take receipt photos to extract data.
+                Fiscora auto-parses banking SMS warnings instantly. You can also log manually or take receipt photos to extract data.
               </p>
             </div>
 
@@ -572,7 +553,7 @@ export default function LandingPage() {
                   <h3 className="text-sm font-bold text-white">How to Install from Unknown Sources</h3>
                 </div>
                 <ol className="space-y-3 text-xs text-slate-300 list-decimal pl-4">
-                  <li>Download the Spendly APK using the download button.</li>
+                  <li>Download the Fiscora APK using the download button.</li>
                   <li>Click open on the downloaded file.</li>
                   <li>If prompted, enable &quot;Allow from this source&quot; in your browser settings.</li>
                   <li>Tap Install to complete setup. Real-time SMS parsing will ask for permission on first start.</li>
@@ -592,7 +573,7 @@ export default function LandingPage() {
               <div className="w-8 h-8 bg-[#3D7FE8] rounded-xl flex items-center justify-center">
                 <Wallet size={16} className="text-white" />
               </div>
-              <span className="text-lg font-bold text-white tracking-tight">Spendly</span>
+              <span className="text-lg font-bold text-white tracking-tight">Fiscora</span>
             </div>
 
             {/* Links */}
@@ -605,7 +586,7 @@ export default function LandingPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-            <p>&copy; {new Date().getFullYear()} Spendly Finance. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} Fiscora Finance. All rights reserved.</p>
             <div className="flex items-center gap-6">
               <span>Solo Portfolio Project</span>
               <a

@@ -10,7 +10,7 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Check for session cookie set by the client after Firebase sign-in
-  const sessionCookie = request.cookies.get('spendly-session')?.value;
+  const sessionCookie = request.cookies.get('fiscora-session')?.value || request.cookies.get('spendly-session')?.value;
 
   const isProtected = protectedPaths.some(
     (p) => pathname === p || pathname.startsWith(p + '/')

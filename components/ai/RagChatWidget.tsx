@@ -78,11 +78,11 @@ export default function RagChatWidget() {
 
       setMessages((prev) => [...prev, aiMessage]);
     } catch (err: any) {
-      console.error('[Spendly AI] Error during RAG query:', err);
+      console.error('[Fiscora AI] Error during RAG query:', err);
       const errorMessage: RagChatMessage = {
         id: `err-${Date.now()}`,
         sender: 'ai',
-        text: err?.message || 'Unable to connect to Spendly AI service. Please make sure the service is running and try again.',
+        text: err?.message || 'Unable to connect to Fiscora AI service. Please make sure the service is running and try again.',
         timestamp: new Date(),
         error: true,
       };
@@ -104,7 +104,7 @@ export default function RagChatWidget() {
         <button
           onClick={() => setIsOpen(true)}
           className="group relative flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-[#0D1B3E] to-[#3D7FE8] text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200"
-          aria-label="Open Spendly AI Advisor"
+          aria-label="Open Fiscora AI Advisor"
         >
           <div className="relative">
             <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
@@ -113,7 +113,7 @@ export default function RagChatWidget() {
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
           </div>
-          <span className="font-semibold text-sm tracking-wide">Spendly AI</span>
+          <span className="font-semibold text-sm tracking-wide">Fiscora AI</span>
         </button>
       )}
 
@@ -128,7 +128,7 @@ export default function RagChatWidget() {
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-bold text-base leading-tight">Spendly AI Advisor</h3>
+                  <h3 className="font-bold text-base leading-tight">Fiscora AI Advisor</h3>
                   <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 font-semibold border border-amber-300/30">
                     RAG Knowledge
                   </span>
@@ -216,7 +216,7 @@ export default function RagChatWidget() {
                   {m.sender === 'ai' && !m.error && (
                     <div className="flex items-center gap-1.5 mb-2 pb-1.5 border-b border-gray-100 text-[11px] font-semibold text-[#3D7FE8]">
                       <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Spendly AI</span>
+                      <span>Fiscora AI</span>
                       {m.grounded && (
                         <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200">
                           <CheckCircle2 className="w-3 h-3" /> Grounded

@@ -115,7 +115,7 @@ export function ChessControls() {
               Orbit Flutter Companion Demo
             </h1>
             <p className="text-blue-100/80 text-sm max-w-2xl leading-relaxed">
-              Test real-time bidirectional WebSocket event synchronization between your Spendly Next.js client and the local Flutter desktop app running on <code className="bg-white/10 px-2 py-0.5 rounded text-blue-200 font-mono text-xs">{wsUrl}</code>.
+              Test real-time bidirectional WebSocket event synchronization between your Fiscora Next.js client and the local Flutter desktop app running on <code className="bg-white/10 px-2 py-0.5 rounded text-blue-200 font-mono text-xs">{wsUrl}</code>.
             </p>
           </div>
 

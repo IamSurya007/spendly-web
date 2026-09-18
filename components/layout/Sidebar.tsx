@@ -43,7 +43,7 @@ export default function Sidebar({ onNavClick }: SidebarProps) {
         <div className="w-8 h-8 bg-[#3D7FE8] rounded-xl flex items-center justify-center shadow-lg">
           <Wallet size={16} className="text-white" />
         </div>
-        <span className="text-white font-bold text-lg tracking-tight">Spendly</span>
+        <span className="text-white font-bold text-lg tracking-tight">Fiscora</span>
       </Link>
 
       {/* Nav Items */}
