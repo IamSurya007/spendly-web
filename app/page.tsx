@@ -29,7 +29,7 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
 
   // Constants
-  const APK_DOWNLOAD_URL = 'https://github.com/IamSurya007/fiscora/releases/latest/download/app-release.apk';
+  const APK_DOWNLOAD_URL = 'https://github.com/IamSurya007/spendly/releases/latest/download/app-release.apk';
 
   // Handle header background on scroll
   useEffect(() => {
