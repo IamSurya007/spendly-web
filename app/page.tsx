@@ -28,8 +28,27 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // Constants
-  const APK_DOWNLOAD_URL = 'https://github.com/IamSurya007/spendly/releases/latest/download/app-release.apk';
+  const DEFAULT_FALLBACK_URL = 'https://github.com/IamSurya007/spendly/releases/latest';
+  const [apkDownloadUrl, setApkDownloadUrl] = useState(DEFAULT_FALLBACK_URL);
+
+  // Fetch dynamic APK download URL from GitHub latest release API
+  useEffect(() => {
+    fetch('https://api.github.com/repos/IamSurya007/spendly/releases/latest')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && Array.isArray(data.assets)) {
+          const apkAsset = data.assets.find((asset: { name: string; browser_download_url: string }) =>
+            asset.name.endsWith('.apk')
+          );
+          if (apkAsset?.browser_download_url) {
+            setApkDownloadUrl(apkAsset.browser_download_url);
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to fetch latest release from GitHub API:', err);
+      });
+  }, []);
 
   // Handle header background on scroll
   useEffect(() => {
@@ -240,7 +259,7 @@ export default function LandingPage() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
-              <a href={APK_DOWNLOAD_URL} className="w-full sm:w-auto">
+              <a href={apkDownloadUrl} className="w-full sm:w-auto">
                 <Button variant="primary" size="lg" className="w-full sm:w-auto shadow-lg shadow-blue-500/25 gap-2 font-semibold">
                   <Download size={18} />
                   Download APK
@@ -408,7 +427,7 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
-              <a href={APK_DOWNLOAD_URL}>
+              <a href={apkDownloadUrl}>
                 <Button variant="primary" fullWidth className="gap-2 shadow-md shadow-blue-500/10">
                   <Download size={16} />
                   Download Android APK
@@ -534,7 +553,7 @@ export default function LandingPage() {
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  <a href={APK_DOWNLOAD_URL} className="w-full sm:w-auto">
+                  <a href={apkDownloadUrl} className="w-full sm:w-auto">
                     <Button variant="primary" className="w-full sm:w-auto gap-2 py-3 bg-[#3D7FE8] hover:bg-blue-600 text-white border-0 shadow-lg shadow-blue-500/25">
                       <Download size={18} />
                       Download APK File
