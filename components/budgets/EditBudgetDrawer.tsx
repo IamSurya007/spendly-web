@@ -6,6 +6,8 @@ import Input from '@/components/ui/Input';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { X, Plus, Trash2 } from 'lucide-react';
+import Select from '@/components/ui/Select';
+import { useCategories } from '@/lib/categories';
 
 interface CategoryLimit {
   category: string;
@@ -20,10 +22,7 @@ interface EditBudgetDrawerProps {
   existingBudgets?: { category: string; limit: number }[];
 }
 
-const defaultCategories = [
-  'Food & Dining', 'Transport', 'Shopping', 'Entertainment',
-  'Health', 'Utilities', 'Rent', 'Education', 'Travel', 'Other',
-];
+const defaultCategories = ['food', 'groceries', 'transport', 'shopping', 'bills', 'entertainment'];
 
 export default function EditBudgetDrawer({
   isOpen,
@@ -34,6 +33,8 @@ export default function EditBudgetDrawer({
 }: EditBudgetDrawerProps) {
   const [categories, setCategories] = useState<CategoryLimit[]>([]);
   const [loading, setLoading] = useState(false);
+  const registry = useCategories();
+  const categoryOptions = registry.parents('expense').map((p) => ({ value: p.id, label: p.name }));
 
   useEffect(() => {
     if (isOpen) {
@@ -94,16 +95,17 @@ export default function EditBudgetDrawer({
           {categories.map((cat, i) => (
             <div key={i} className="flex items-end gap-2">
               <div className="flex-1">
-                <Input
+                <Select
                   id={`budget-category-${i}`}
                   label={i === 0 ? 'Category' : undefined}
+                  options={categoryOptions}
                   value={cat.category}
                   onChange={(e) => {
                     const updated = [...categories];
                     updated[i].category = e.target.value;
                     setCategories(updated);
                   }}
-                  placeholder="Category name"
+                  placeholder="Select category"
                 />
               </div>
               <div className="w-28">

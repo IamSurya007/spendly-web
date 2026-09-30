@@ -9,6 +9,8 @@ import Button from '@/components/ui/Button';
 import { Pencil, Trash2, AlertCircle, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Expense } from '@/types';
+import { useCategories } from '@/lib/categories';
+import CategoryIcon from '@/components/categories/CategoryIcon';
 
 interface ExpenseTableProps {
   filters: { category?: string; source?: string; month?: string };
@@ -30,13 +32,14 @@ export default function ExpenseTable({ filters, onEdit, refreshKey }: ExpenseTab
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const categories = useCategories();
   const limit = 15;
 
   const fetchExpenses = async () => {
     setLoading(true);
     try {
       const params: Record<string, string | number> = { page, limit };
-      if (filters.category) params.category = filters.category;
+      if (filters.category) params.categoryId = filters.category;
       if (filters.source) params.source = filters.source;
       if (filters.month) params.month = filters.month;
 
@@ -114,16 +117,25 @@ export default function ExpenseTable({ filters, onEdit, refreshKey }: ExpenseTab
                   </td>
                   <td className="py-3 px-2">
                     <p className="font-medium text-[#0D1B3E]">
-                      {expense.merchant || expense.category}
+                      {expense.merchant || categories.label(expense)}
                     </p>
                     {expense.note && (
                       <p className="text-xs text-[#7B8399] truncate max-w-[200px]">{expense.note}</p>
                     )}
                   </td>
                   <td className="py-3 px-2">
-                    <span className="text-xs bg-[#EEF1F8] text-[#0D1B3E] px-2 py-1 rounded-md">
-                      {expense.category}
-                    </span>
+                    {(() => {
+                      const { parent, sub } = categories.resolve(expense);
+                      return (
+                        <span className="inline-flex items-center gap-2 text-xs text-[#0D1B3E]">
+                          <CategoryIcon category={sub ?? parent} size={26} />
+                          <span className="leading-tight">
+                            <span className="block font-medium">{sub?.name ?? parent.name}</span>
+                            {sub && <span className="block text-[10px] text-[#7B8399]">{parent.name}</span>}
+                          </span>
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="py-3 px-2">
                     <div className="flex items-center gap-1.5 flex-wrap">

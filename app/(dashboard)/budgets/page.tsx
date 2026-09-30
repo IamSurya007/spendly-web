@@ -13,6 +13,8 @@ import type { Metadata } from 'next';
 
 interface BudgetStatus {
   category: string;
+  categoryId?: string;
+  month?: string;
   limit: number;
   spent: number;
   remaining: number;
@@ -104,7 +106,7 @@ export default function BudgetsPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {budgets.map((budget) => (
-            <BudgetCard key={budget.category} budget={budget} />
+            <BudgetCard key={`${budget.month ?? month}:${budget.categoryId ?? budget.category}`} budget={budget} />
           ))}
         </div>
       )}
@@ -114,7 +116,10 @@ export default function BudgetsPage() {
         onClose={() => setDrawerOpen(false)}
         month={month}
         onSuccess={fetchBudgets}
-        existingBudgets={budgets.map((b) => ({ category: b.category, limit: b.limit }))}
+        existingBudgets={budgets
+          // Limits set in the mobile app apply to every month ('all') and are edited there.
+          .filter((b) => (b.month ?? month) === month)
+          .map((b) => ({ category: b.categoryId ?? b.category, limit: b.limit }))}
       />
     </div>
   );

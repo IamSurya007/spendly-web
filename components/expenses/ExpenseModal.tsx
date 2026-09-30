@@ -8,6 +8,8 @@ import Button from '@/components/ui/Button';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import type { Account, Expense } from '@/types';
+import CategoryPicker, { CategoryValue } from '@/components/categories/CategoryPicker';
+import { resolveLegacyCategory, useCategories } from '@/lib/categories';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -24,12 +26,6 @@ const methodOptions = [
   { value: 'CHEQUE', label: 'Cheque' },
 ];
 
-const commonCategories = [
-  'Food & Dining', 'Transport', 'Shopping', 'Entertainment',
-  'Health', 'Utilities', 'Rent', 'Education', 'Travel', 'Other',
-];
-
-const categoryOptions = commonCategories.map((c) => ({ value: c, label: c }));
 
 function toInputDate(dateStr?: string) {
   if (!dateStr) return new Date().toISOString().slice(0, 16);
@@ -57,6 +53,8 @@ export default function ExpenseModal({
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const categories = useCategories();
+  const [categoryValue, setCategoryValue] = useState<CategoryValue | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -93,7 +91,13 @@ export default function ExpenseModal({
         accountId: expense.accountId || 'default_bank',
         isCountedAsSpend: spendFlag,
       });
+      setCategoryValue(
+        expense.categoryId
+          ? { categoryId: expense.categoryId, subcategoryId: expense.subcategoryId ?? null }
+          : resolveLegacyCategory(expense.category, expense.amount < 0),
+      );
     } else {
+      setCategoryValue(null);
       setForm({
         amount: '',
         category: '',
@@ -113,7 +117,7 @@ export default function ExpenseModal({
     const errs: Record<string, string> = {};
     if (!form.amount || isNaN(Number(form.amount)) || Number(form.amount) <= 0)
       errs.amount = 'Valid amount is required';
-    if (!form.category) errs.category = 'Category is required';
+    if (!categoryValue) errs.category = 'Category is required';
     if (!form.date) errs.date = 'Date is required';
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -125,9 +129,14 @@ export default function ExpenseModal({
 
     setLoading(true);
     try {
+      const parent = categories.byId(categoryValue!.categoryId);
+      const sub = categories.byId(categoryValue!.subcategoryId);
       const payload = {
         amount: Number(form.amount),
-        category: form.category,
+        category: parent?.name ?? categoryValue!.categoryId,
+        categoryId: categoryValue!.categoryId,
+        subcategoryId: categoryValue!.subcategoryId ?? undefined,
+        subcategory: sub?.name,
         note: form.note || undefined,
         date: new Date(form.date).toISOString(),
         method: form.method,
@@ -196,25 +205,20 @@ export default function ExpenseModal({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Select
-            id="expense-category"
-            label="Category"
-            options={categoryOptions}
-            value={form.category}
-            onChange={(e) => setForm({ ...form, category: e.target.value })}
-            placeholder="Select category"
-            error={errors.category}
-            required
-          />
-          <Select
-            id="expense-account"
-            label="Account / Payment Source"
-            options={accountOptions}
-            value={form.accountId}
-            onChange={(e) => setForm({ ...form, accountId: e.target.value })}
-          />
-        </div>
+        <CategoryPicker
+          registry={categories}
+          value={categoryValue}
+          onChange={setCategoryValue}
+          error={errors.category}
+        />
+
+        <Select
+          id="expense-account"
+          label="Account / Payment Source"
+          options={accountOptions}
+          value={form.accountId}
+          onChange={(e) => setForm({ ...form, accountId: e.target.value })}
+        />
 
         <div className="grid grid-cols-2 gap-3">
           <Select

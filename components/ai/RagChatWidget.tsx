@@ -15,10 +15,60 @@ import {
   Info,
   ShieldCheck,
   Maximize2,
-  Minimize2
+  Minimize2,
+  History,
+  Plus,
+  Pencil,
+  ArrowLeft,
 } from 'lucide-react';
-import { askRagQuestion, RagChatMessage, RagSource } from '@/lib/rag';
+import {
+  askRagQuestion,
+  ChatConversationSummary,
+  deleteConversation,
+  getConversationMessages,
+  listConversations,
+  RagChatMessage,
+  RagSource,
+  renameConversation,
+} from '@/lib/rag';
 import FormattedMarkdown from './FormattedMarkdown';
+
+const LAST_CONVERSATION_KEY = 'fiscora.ai.lastConversationId';
+
+function readLastConversationId(): string | null {
+  try {
+    return window.localStorage.getItem(LAST_CONVERSATION_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeLastConversationId(id: string | null) {
+  try {
+    if (id) window.localStorage.setItem(LAST_CONVERSATION_KEY, id);
+    else window.localStorage.removeItem(LAST_CONVERSATION_KEY);
+  } catch {
+    // Storage unavailable (private mode): history still works, just not restored.
+  }
+}
+
+function errorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error && err.message ? err.message : fallback;
+}
+
+function groupLabel(iso: string): string {
+  const d = new Date(iso);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const day = new Date(d);
+  day.setHours(0, 0, 0, 0);
+  const diff = Math.round((today.getTime() - day.getTime()) / 86_400_000);
+  if (diff <= 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  if (diff < 7) return 'Previous 7 days';
+  if (diff < 30) return 'Previous 30 days';
+  return d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+}
 
 const QUICK_PROMPTS = [
   'What is the 50/30/20 budgeting rule?',
@@ -34,9 +84,93 @@ export default function RagChatWidget() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedSource, setSelectedSource] = useState<{ source: RagSource; messageId: string } | null>(null);
-  
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationTitle, setConversationTitle] = useState<string | null>(null);
+  const [loadingConversation, setLoadingConversation] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [history, setHistory] = useState<ChatConversationSummary[]>([]);
+  const [historyCursor, setHistoryCursor] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const restoredRef = useRef(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const openConversation = async (id: string, title?: string) => {
+    setShowHistory(false);
+    setSelectedSource(null);
+    setConversationId(id);
+    setConversationTitle(title ?? null);
+    setMessages([]);
+    setLoadingConversation(true);
+    try {
+      const data = await getConversationMessages(id);
+      setMessages(data.messages);
+      setConversationTitle(data.title);
+      writeLastConversationId(id);
+    } catch (err) {
+      // Deleted elsewhere or not ours any more: start fresh.
+      setConversationId(null);
+      setConversationTitle(null);
+      writeLastConversationId(null);
+      if (title) setHistoryError(errorMessage(err, 'Could not open that conversation.'));
+    } finally {
+      setLoadingConversation(false);
+    }
+  };
+
+  // Reopen the last conversation the first time the widget is opened.
+  const openWidget = () => {
+    setIsOpen(true);
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    const lastId = readLastConversationId();
+    if (lastId && messages.length === 0) void openConversation(lastId);
+  };
+
+  const loadHistory = async (cursor?: string) => {
+    setHistoryLoading(true);
+    setHistoryError(null);
+    try {
+      const page = await listConversations(cursor);
+      setHistory((prev) => (cursor ? [...prev, ...page.items] : page.items));
+      setHistoryCursor(page.nextCursor);
+    } catch (err) {
+      setHistoryError(errorMessage(err, 'Could not load chat history.'));
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const toggleHistory = () => {
+    const next = !showHistory;
+    setShowHistory(next);
+    if (next) void loadHistory();
+  };
+
+  const handleRename = async (c: ChatConversationSummary) => {
+    const title = window.prompt('Rename chat', c.title)?.trim();
+    if (!title || title === c.title) return;
+    try {
+      await renameConversation(c.id, title);
+      setHistory((prev) => prev.map((h) => (h.id === c.id ? { ...h, title } : h)));
+      if (c.id === conversationId) setConversationTitle(title);
+    } catch (err) {
+      setHistoryError(errorMessage(err, 'Could not rename the conversation.'));
+    }
+  };
+
+  const handleDelete = async (c: ChatConversationSummary) => {
+    if (!window.confirm(`Delete "${c.title}" from your chat history?`)) return;
+    try {
+      await deleteConversation(c.id);
+      setHistory((prev) => prev.filter((h) => h.id !== c.id));
+      if (c.id === conversationId) newChat();
+    } catch (err) {
+      setHistoryError(errorMessage(err, 'Could not delete the conversation.'));
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -65,7 +199,12 @@ export default function RagChatWidget() {
     setLoading(true);
 
     try {
-      const data = await askRagQuestion(query);
+      const data = await askRagQuestion(query, conversationId ?? undefined);
+      if (data.conversationId) {
+        setConversationId(data.conversationId);
+        if (data.conversationTitle) setConversationTitle(data.conversationTitle);
+        writeLastConversationId(data.conversationId);
+      }
 
       const aiMessage: RagChatMessage = {
         id: `ai-${Date.now()}`,
@@ -77,24 +216,29 @@ export default function RagChatWidget() {
       };
 
       setMessages((prev) => [...prev, aiMessage]);
-    } catch (err: any) {
+    } catch (err) {
       console.error('[Fiscora AI] Error during RAG query:', err);
-      const errorMessage: RagChatMessage = {
+      const failure: RagChatMessage = {
         id: `err-${Date.now()}`,
         sender: 'ai',
-        text: err?.message || 'Unable to connect to Fiscora AI service. Please make sure the service is running and try again.',
+        text: errorMessage(err, 'Unable to connect to Fiscora AI service. Please make sure the service is running and try again.'),
         timestamp: new Date(),
         error: true,
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, failure]);
     } finally {
       setLoading(false);
     }
   };
 
-  const clearChat = () => {
+  /** Start a fresh conversation; the current one stays in history. */
+  const newChat = () => {
     setMessages([]);
     setSelectedSource(null);
+    setConversationId(null);
+    setConversationTitle(null);
+    setShowHistory(false);
+    writeLastConversationId(null);
   };
 
   return (
@@ -102,7 +246,7 @@ export default function RagChatWidget() {
       {/* Floating Action Button */}
       {!isOpen && (
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={openWidget}
           className="group relative flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-[#0D1B3E] to-[#3D7FE8] text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-200"
           aria-label="Open Fiscora AI Advisor"
         >
@@ -133,8 +277,9 @@ export default function RagChatWidget() {
                     RAG Knowledge
                   </span>
                 </div>
-                <p className="text-xs text-blue-200 flex items-center gap-1 mt-0.5">
-                  <ShieldCheck className="w-3 h-3 text-emerald-400" /> Grounded Financial Wisdom
+                <p className="text-xs text-blue-200 flex items-center gap-1 mt-0.5 max-w-[220px] sm:max-w-[300px]">
+                  <ShieldCheck className="w-3 h-3 shrink-0 text-emerald-400" />
+                  <span className="truncate">{conversationTitle || 'Grounded Financial Wisdom'}</span>
                 </p>
               </div>
             </div>
@@ -148,15 +293,23 @@ export default function RagChatWidget() {
                 {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
               </button>
 
-              {messages.length > 0 && (
+              {(messages.length > 0 || conversationId) && (
                 <button
-                  onClick={clearChat}
-                  className="p-1.5 rounded-lg hover:bg-white/15 text-white/80 hover:text-white transition-colors"
-                  title="Clear Chat"
+                  onClick={newChat}
+                  disabled={loading}
+                  className="p-1.5 rounded-lg hover:bg-white/15 text-white/80 hover:text-white transition-colors disabled:opacity-40"
+                  title="New chat"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Plus className="w-4 h-4" />
                 </button>
               )}
+              <button
+                onClick={toggleHistory}
+                className={`p-1.5 rounded-lg hover:bg-white/15 transition-colors ${showHistory ? 'bg-white/15 text-white' : 'text-white/80 hover:text-white'}`}
+                title="Chat history"
+              >
+                <History className="w-4 h-4" />
+              </button>
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-1.5 rounded-lg hover:bg-white/15 text-white/80 hover:text-white transition-colors"
@@ -167,9 +320,92 @@ export default function RagChatWidget() {
             </div>
           </div>
 
+          {/* History Panel */}
+          {showHistory && (
+            <div className="flex-1 overflow-y-auto bg-white">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-[#E4E7EF]">
+                <button
+                  onClick={() => setShowHistory(false)}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-[#0D1B3E] hover:text-[#3D7FE8]"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Chat history
+                </button>
+                <button
+                  onClick={newChat}
+                  className="flex items-center gap-1 text-xs font-semibold text-[#3D7FE8] hover:underline"
+                >
+                  <Plus className="w-3.5 h-3.5" /> New chat
+                </button>
+              </div>
+              {historyError && <p className="px-4 pt-3 text-xs text-red-600">{historyError}</p>}
+              {history.length === 0 && !historyLoading && !historyError && (
+                <p className="px-6 py-10 text-center text-xs text-[#7B8399]">
+                  No saved chats yet. Your conversations with Fiscora AI will appear here.
+                </p>
+              )}
+              <ul className="py-1">
+                {history.map((c, i) => {
+                  const label = groupLabel(c.lastMessageAt);
+                  const showLabel = i === 0 || groupLabel(history[i - 1].lastMessageAt) !== label;
+                  return (
+                    <li key={c.id}>
+                      {showLabel && (
+                        <p className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-wider font-semibold text-[#7B8399]">
+                          {label}
+                        </p>
+                      )}
+                      <div
+                        className={`group flex items-center gap-2 px-4 py-2.5 cursor-pointer hover:bg-[#F0F2F6] ${c.id === conversationId ? 'bg-[#EEF1F8]' : ''}`}
+                        onClick={() => openConversation(c.id, c.title)}
+                      >
+                        <MessageSquare className="w-4 h-4 shrink-0 text-[#7B8399]" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-[#0D1B3E] truncate">{c.title}</p>
+                          {c.preview && <p className="text-xs text-[#7B8399] truncate">{c.preview}</p>}
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); void handleRename(c); }}
+                          className="p-1 rounded opacity-0 group-hover:opacity-100 text-[#7B8399] hover:text-[#0D1B3E]"
+                          title="Rename"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); void handleDelete(c); }}
+                          className="p-1 rounded opacity-0 group-hover:opacity-100 text-[#7B8399] hover:text-red-600"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              {historyLoading && (
+                <p className="px-4 py-3 text-xs text-[#7B8399] flex items-center gap-2">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Loading…
+                </p>
+              )}
+              {historyCursor && !historyLoading && (
+                <button
+                  onClick={() => loadHistory(historyCursor)}
+                  className="w-full py-2.5 text-xs font-semibold text-[#3D7FE8] hover:bg-blue-50"
+                >
+                  Load older chats
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#F8FAFC]">
-            {messages.length === 0 && (
+          <div className={`flex-1 overflow-y-auto p-4 space-y-4 bg-[#F8FAFC] ${showHistory ? 'hidden' : ''}`}>
+            {loadingConversation && (
+              <div className="flex items-center justify-center h-full text-xs text-[#7B8399] gap-2">
+                <RefreshCw className="w-4 h-4 animate-spin" /> Loading conversation…
+              </div>
+            )}
+            {messages.length === 0 && !loadingConversation && (
               <div className="flex flex-col items-center justify-center h-full text-center px-4 py-6">
                 <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mb-3 text-[#3D7FE8] border border-blue-100 shadow-sm">
                   <BookOpen className="w-7 h-7" />
@@ -299,7 +535,7 @@ export default function RagChatWidget() {
           </div>
 
           {/* Footer Input Bar */}
-          <div className="p-3 bg-white border-t border-[#E4E7EF] flex items-center gap-2">
+          <div className={`p-3 bg-white border-t border-[#E4E7EF] flex items-center gap-2 ${showHistory ? 'hidden' : ''}`}>
             <input
               ref={inputRef}
               type="text"
@@ -308,7 +544,7 @@ export default function RagChatWidget() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              disabled={loading}
+              disabled={loading || loadingConversation}
             />
             <button
               onClick={() => handleSend()}
