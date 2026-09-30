@@ -90,3 +90,20 @@ context/
   AuthContext.tsx     # Firebase auth + backend sync
 middleware.ts         # Route protection
 ```
+
+## Categories
+
+Categories are two-level (parent → subcategory) with Phosphor icons and colours, shared with the mobile app and backend.
+
+- `lib/categories.generated.ts` and `components/categories/categoryIcons.generated.tsx` are **generated** from `spendly-service/shared/categories.json` by `node shared/generate-categories.mjs` (run in `spendly-service`). Do not edit them by hand.
+- `lib/categories.ts`: `useCategories()` loads the user's effective categories from `GET /categories` (system + custom + renames), falling back to the built-in list, and returns a `CategoryRegistry` (`parents()`, `childrenOf()`, `resolve(expense)`, `label(expense)`). `resolveLegacyCategory()` maps old category names to ids.
+- `components/categories/CategoryIcon.tsx` renders the tinted tile; `CategoryPicker.tsx` is the parent grid + subcategory chips used in the expense modal.
+- Expenses are saved with `categoryId` / `subcategoryId` (plus display names). The expenses filter sends `categoryId`, which matches both levels. Budgets are keyed by parent category id; limits set in the mobile app apply to every month and show as "every month (set in app)".
+
+## AI Assistant
+
+`components/ai/RagChatWidget.tsx` is the floating assistant. Conversations are saved on the backend (`lib/rag.ts`: `askRagQuestion(question, conversationId)`, `listConversations`, `getConversationMessages`, `renameConversation`, `deleteConversation`):
+
+- The history button opens past chats, grouped by day, with rename and delete.
+- "New chat" starts a fresh conversation. The last open conversation is remembered in `localStorage` and reopened when the widget is opened.
+- Follow-up questions have context because the backend adds the conversation's recent messages.
