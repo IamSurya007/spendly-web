@@ -16,7 +16,13 @@ export interface Account {
 export interface Expense {
   id: string;
   amount: number;
+  /** Display name of the parent category when written. */
   category: string;
+  /** Parent category id, e.g. `food`. */
+  categoryId?: string | null;
+  /** Subcategory id, e.g. `food.delivery`. */
+  subcategoryId?: string | null;
+  subcategory?: string | null;
   note?: string;
   date: string;
   method: 'CASH' | 'UPI' | 'CARD' | 'NETBANKING' | string;
@@ -75,6 +81,10 @@ export interface InvestmentSummary {
 
 export interface BudgetStatus {
   category: string;
+  /** Parent category id the budget applies to. */
+  categoryId?: string;
+  /** 'YYYY-MM', or 'all' for limits set in the mobile app that apply every month. */
+  month?: string;
   limit: number;
   spent: number;
   remaining: number;
